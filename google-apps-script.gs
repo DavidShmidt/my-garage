@@ -36,8 +36,14 @@ function ensureSheet_(name, headers) {
   const spreadsheet = ss_();
   let sheet = spreadsheet.getSheetByName(name);
   if (!sheet) sheet = spreadsheet.insertSheet(name);
-  sheet.clear();
-  sheet.appendRow(headers);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+  } else {
+    const existingHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0];
+    headers.forEach((header, index) => {
+      if (existingHeaders[index] !== header) sheet.getRange(1, index + 1).setValue(header);
+    });
+  }
   return sheet;
 }
 
@@ -52,6 +58,7 @@ function readCars_() {
   const recordsByCar = {};
 
   recordRows.forEach(row => {
+    if (row[7]) return;
     const record = {
       id: String(row[0] || Utilities.getUuid()),
       date: toIsoDate_(row[2]),
@@ -66,6 +73,7 @@ function readCars_() {
   });
 
   return carsRows.map(row => {
+    if (row[10]) return null;
     const id = String(row[0] || "");
     return {
       id,
@@ -80,45 +88,99 @@ function readCars_() {
       photo: String(row[9] || ""),
       records: recordsByCar[id] || []
     };
-  }).filter(car => car.id);
+  }).filter(car => car && car.id);
 }
 
 function writeCars_(cars) {
-  const carsSheet = ensureSheet_("Cars", ["id", "name", "meta", "year", "plate", "vin", "status", "note", "mileage", "photo"]);
-  const recordsSheet = ensureSheet_("Records", ["id", "car_id", "date", "mileage", "work", "cost", "comment"]);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const carsSheet = ensureSheet_("Cars", ["id", "name", "meta", "year", "plate", "vin", "status", "note", "mileage", "photo", "deleted_at", "updated_at"]);
+    const recordsSheet = ensureSheet_("Records", ["id", "car_id", "date", "mileage", "work", "cost", "comment", "deleted_at", "updated_at"]);
+    backup_(cars);
 
-  const carValues = [];
-  const recordValues = [];
+    const incomingCarIds = {};
+    const incomingRecordIds = {};
 
-  cars.forEach(car => {
-    carValues.push([
-      car.id,
-      car.name,
-      car.meta,
-      car.year || "",
-      car.plate || "",
-      car.vin || "",
-      car.status || "На ходу",
-      car.note || "",
-      Number(car.mileage || 0),
-      car.photo || ""
-    ]);
-
-    (car.records || []).forEach(record => {
-      recordValues.push([
-        record.id || Utilities.getUuid(),
+    cars.forEach(car => {
+      incomingCarIds[car.id] = true;
+      upsertRow_(carsSheet, String(car.id), [
         car.id,
-        record.date,
-        Number(record.mileage || 0),
-        record.work || "",
-        record.cost == null ? "" : Number(record.cost || 0),
-        record.comment || ""
+        car.name,
+        car.meta,
+        car.year || "",
+        car.plate || "",
+        car.vin || "",
+        car.status || "На ходу",
+        car.note || "",
+        Number(car.mileage || 0),
+        car.photo || "",
+        "",
+        new Date()
       ]);
-    });
-  });
 
-  if (carValues.length) carsSheet.getRange(2, 1, carValues.length, carValues[0].length).setValues(carValues);
-  if (recordValues.length) recordsSheet.getRange(2, 1, recordValues.length, recordValues[0].length).setValues(recordValues);
+      (car.records || []).forEach(record => {
+        const recordId = String(record.id || Utilities.getUuid());
+        incomingRecordIds[recordId] = true;
+        upsertRow_(recordsSheet, recordId, [
+          recordId,
+          car.id,
+          record.date,
+          Number(record.mileage || 0),
+          record.work || "",
+          record.cost == null ? "" : Number(record.cost || 0),
+          record.comment || "",
+          "",
+          new Date()
+        ]);
+      });
+    });
+
+    markMissingRowsDeleted_(carsSheet, incomingCarIds);
+    markMissingRowsDeleted_(recordsSheet, incomingRecordIds);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function upsertRow_(sheet, id, values) {
+  const row = findRowById_(sheet, id);
+  if (row) {
+    sheet.getRange(row, 1, 1, values.length).setValues([values]);
+  } else {
+    sheet.appendRow(values);
+  }
+}
+
+function findRowById_(sheet, id) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return 0;
+  const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (let index = 0; index < ids.length; index += 1) {
+    if (String(ids[index][0]) === String(id)) return index + 2;
+  }
+  return 0;
+}
+
+function markMissingRowsDeleted_(sheet, activeIds) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const rows = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  const deletedAtColumn = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].indexOf("deleted_at") + 1;
+  if (!deletedAtColumn) return;
+
+  rows.forEach((row, index) => {
+    const id = String(row[0] || "");
+    const alreadyDeleted = row[deletedAtColumn - 1];
+    if (id && !activeIds[id] && !alreadyDeleted) {
+      sheet.getRange(index + 2, deletedAtColumn).setValue(new Date());
+    }
+  });
+}
+
+function backup_(cars) {
+  const sheet = ensureSheet_("Backups", ["created_at", "json"]);
+  sheet.appendRow([new Date(), JSON.stringify(cars)]);
 }
 
 function toIsoDate_(value) {

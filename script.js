@@ -41,6 +41,7 @@ let syncTimer = null;
 let pullTimer = null;
 let lastPullAt = 0;
 let isPullingFromSheets = false;
+let hasLoadedFromSheets = false;
 let syncStatusMessage = "";
 let syncSettings = loadSyncSettings();
 
@@ -129,12 +130,20 @@ function schedulePushToSheets() {
     updateSyncStatus();
     return;
   }
+  if (!hasLoadedFromSheets) {
+    updateSyncStatus("Сначала загрузите данные из таблицы");
+    return;
+  }
   clearTimeout(syncTimer);
   syncTimer = setTimeout(pushToSheets, 650);
 }
 
 function pushToSheets() {
   if (!isSyncEnabled()) return;
+  if (!hasLoadedFromSheets) {
+    updateSyncStatus("Сначала загрузите данные из таблицы");
+    return;
+  }
   updateSyncStatus("Отправка данных...");
   const formData = new FormData();
   formData.set("pin", syncSettings.syncPin);
@@ -177,6 +186,7 @@ function pullFromSheets(options = {}) {
     isPullingFromSheets = true;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
     lastPullAt = Date.now();
+    hasLoadedFromSheets = true;
     isPullingFromSheets = false;
     updateSyncStatus(`Загружено: ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`);
     elements.syncDialog.close();
@@ -372,8 +382,8 @@ elements.syncForm.addEventListener("submit", (event) => {
   saveSyncSettings();
   elements.syncDialog.close();
   if (isSyncEnabled()) {
-    pushToSheets();
     startAutoPull();
+    pullFromSheets({ silent: true });
   }
 });
 
