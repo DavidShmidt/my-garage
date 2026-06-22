@@ -38,6 +38,9 @@ let cars = loadCars();
 let activeId = location.hash.replace("#", "") || cars[0].id;
 if (!cars.some((car) => car.id === activeId)) activeId = cars[0].id;
 let syncTimer = null;
+let pullTimer = null;
+let lastPullAt = 0;
+let isPullingFromSheets = false;
 let syncSettings = loadSyncSettings();
 
 const $ = (selector) => document.querySelector(selector);
@@ -78,7 +81,7 @@ const sortRecords = (records) => records.sort((a, b) =>
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
-    schedulePushToSheets();
+    if (!isPullingFromSheets) schedulePushToSheets();
     return true;
   } catch {
     alert("Не удалось сохранить данные. Возможно, хранилище браузера заполнено.");
@@ -143,11 +146,12 @@ function pushToSheets() {
   });
 }
 
-function pullFromSheets() {
+function pullFromSheets(options = {}) {
   if (!isSyncEnabled()) {
-    alert("Сначала укажите URL Apps Script и PIN.");
+    if (!options.silent) alert("Сначала укажите URL Apps Script и PIN.");
     return;
   }
+  if (Date.now() - lastPullAt < 12000 && options.silent) return;
 
   updateSyncStatus("Загрузка из таблицы...");
   const callbackName = `garageSheets_${Date.now()}`;
@@ -161,12 +165,15 @@ function pullFromSheets() {
     script.remove();
     if (!response?.ok || !Array.isArray(response.cars)) {
       updateSyncStatus("Ошибка загрузки");
-      alert("Не удалось загрузить данные из Google Таблицы.");
+      if (!options.silent) alert("Не удалось загрузить данные из Google Таблицы.");
       return;
     }
+    isPullingFromSheets = true;
     cars = response.cars.map((car, index) => ({ ...(defaultCars[index] || defaultCars[0]), ...car }));
     if (!cars.some((car) => car.id === activeId)) activeId = cars[0]?.id || defaultCars[0].id;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
+    lastPullAt = Date.now();
+    isPullingFromSheets = false;
     updateSyncStatus("Данные загружены");
     elements.syncDialog.close();
     render();
@@ -178,9 +185,16 @@ function pullFromSheets() {
     delete window[callbackName];
     script.remove();
     updateSyncStatus("Ошибка загрузки");
-    alert("Не удалось подключиться к Apps Script.");
+    if (!options.silent) alert("Не удалось подключиться к Apps Script.");
   };
   document.head.appendChild(script);
+}
+
+function startAutoPull() {
+  clearInterval(pullTimer);
+  if (!isSyncEnabled()) return;
+  setTimeout(() => pullFromSheets({ silent: true }), 900);
+  pullTimer = setInterval(() => pullFromSheets({ silent: true }), 60000);
 }
 
 function renderNav() {
@@ -353,7 +367,10 @@ elements.syncForm.addEventListener("submit", (event) => {
   };
   saveSyncSettings();
   elements.syncDialog.close();
-  if (isSyncEnabled()) pushToSheets();
+  if (isSyncEnabled()) {
+    pushToSheets();
+    startAutoPull();
+  }
 });
 
 $("#pullFromSheets").addEventListener("click", pullFromSheets);
@@ -382,4 +399,9 @@ window.addEventListener("hashchange", () => {
   }
 });
 
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) pullFromSheets({ silent: true });
+});
+
 render();
+startAutoPull();
