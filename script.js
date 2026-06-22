@@ -12,6 +12,7 @@ const defaultCars = [
     status: "На ходу",
     note: "",
     mileage: 315000,
+    image: "assets/cars/vaz-2115.png",
     photo: "",
     records: [
       { id: crypto.randomUUID(), date: "2024-05-15", mileage: 312000, work: "Замена масла и масляного фильтра", cost: 1800, comment: "Лукойл 10W-40" },
@@ -19,9 +20,9 @@ const defaultCars = [
       { id: crypto.randomUUID(), date: "2023-10-21", mileage: 298000, work: "Проверка лямбда-зонда", cost: 1200, comment: "Показания в норме" }
     ]
   },
-  { id: "polo-sedan", name: "VW Polo Sedan", meta: "5 поколение", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, photo: "", records: [] },
-  { id: "renault-sandero", name: "Renault Sandero", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, photo: "", records: [] },
-  { id: "lada-largus", name: "Lada Largus", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, photo: "", records: [] }
+  { id: "polo-sedan", name: "VW Polo Sedan", meta: "5 поколение", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/polo-sedan.png", photo: "", records: [] },
+  { id: "renault-sandero", name: "Renault Sandero", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/renault-sandero.png", photo: "", records: [] },
+  { id: "lada-largus", name: "Lada Largus", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/lada-largus.png", photo: "", records: [] }
 ];
 
 function loadCars() {
@@ -251,8 +252,9 @@ function render() {
   elements.lastService.textContent = car.records.length
     ? formatDate(sortRecords([...car.records])[0].date)
     : "—";
-  elements.photo.classList.toggle("has-photo", Boolean(car.photo));
-  elements.photo.style.backgroundImage = car.photo ? `url("${car.photo}")` : "";
+  const carImage = car.photo || car.image || "";
+  elements.photo.classList.toggle("has-photo", Boolean(carImage));
+  elements.photo.style.backgroundImage = carImage ? `url("${carImage}")` : "";
   $("#photoButton span").textContent = car.photo ? "Заменить фото" : "Добавить фото";
   renderRecords(car);
   updateSyncStatus();
