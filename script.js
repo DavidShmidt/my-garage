@@ -41,6 +41,7 @@ let syncTimer = null;
 let pullTimer = null;
 let lastPullAt = 0;
 let isPullingFromSheets = false;
+let syncStatusMessage = "";
 let syncSettings = loadSyncSettings();
 
 const $ = (selector) => document.querySelector(selector);
@@ -116,8 +117,11 @@ function isSyncEnabled() {
 
 function updateSyncStatus(text) {
   if (!elements.syncTitle || !elements.syncText) return;
+  if (text) syncStatusMessage = text;
   elements.syncTitle.textContent = isSyncEnabled() ? "Google Таблица" : "Локальный режим";
-  elements.syncText.textContent = text || (isSyncEnabled() ? "Синхронизация включена" : "Google Таблица не подключена");
+  elements.syncText.textContent = syncStatusMessage || (isSyncEnabled() ? "Синхронизация включена" : "Google Таблица не подключена");
+  const refreshButton = $("#refreshFromSheets");
+  if (refreshButton) refreshButton.disabled = !isSyncEnabled();
 }
 
 function schedulePushToSheets() {
@@ -168,13 +172,13 @@ function pullFromSheets(options = {}) {
       if (!options.silent) alert("Не удалось загрузить данные из Google Таблицы.");
       return;
     }
-    isPullingFromSheets = true;
     cars = response.cars.map((car, index) => ({ ...(defaultCars[index] || defaultCars[0]), ...car }));
     if (!cars.some((car) => car.id === activeId)) activeId = cars[0]?.id || defaultCars[0].id;
+    isPullingFromSheets = true;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
     lastPullAt = Date.now();
     isPullingFromSheets = false;
-    updateSyncStatus("Данные загружены");
+    updateSyncStatus(`Загружено: ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`);
     elements.syncDialog.close();
     render();
   };
@@ -194,7 +198,7 @@ function startAutoPull() {
   clearInterval(pullTimer);
   if (!isSyncEnabled()) return;
   setTimeout(() => pullFromSheets({ silent: true }), 900);
-  pullTimer = setInterval(() => pullFromSheets({ silent: true }), 60000);
+  pullTimer = setInterval(() => pullFromSheets({ silent: true }), 30000);
 }
 
 function renderNav() {
@@ -374,6 +378,7 @@ elements.syncForm.addEventListener("submit", (event) => {
 });
 
 $("#pullFromSheets").addEventListener("click", pullFromSheets);
+$("#refreshFromSheets").addEventListener("click", () => pullFromSheets({ silent: false }));
 
 $("#photoButton").addEventListener("click", () => elements.photoInput.click());
 elements.photoInput.addEventListener("change", () => {

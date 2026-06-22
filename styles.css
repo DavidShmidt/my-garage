@@ -78,6 +78,19 @@ svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
 .car-nav-item strong { display: block; font-size: .82rem; font-weight: 700; }
 .car-nav-item small { display: block; margin-top: 3px; color: #71766f; font-size: .67rem; }
 .sidebar-footer { margin-top: auto; }
+.refresh-button {
+  width: 100%;
+  min-height: 42px;
+  margin-bottom: 9px;
+  border: 1px solid rgba(61,143,255,.28);
+  border-radius: 10px;
+  color: #d7e7ff;
+  background: rgba(61,143,255,.1);
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.refresh-button:hover { border-color: var(--accent); color: #fff; }
 .sync-card { width: 100%; display: flex; gap: 10px; align-items: center; padding: 15px; border: 1px solid var(--line); border-radius: 10px; color: inherit; background: #111720; text-align: left; cursor: pointer; }
 .sync-card:hover { border-color: rgba(61,143,255,.45); }
 .sync-card strong, .sync-card small { display: block; font-size: .67rem; }
