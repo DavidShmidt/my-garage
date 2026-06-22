@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d13">
+    <title>Мой гараж</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17h14l1-5-2-4H6l-2 4 1 5Zm2-7h10l1 2H6l1-2Zm-1 4h12l-.3 1H6.3L6 14Zm0 4v2H4v-3h16v3h-2v-2H6Z"/></symbol>
+      <symbol id="i-road" viewBox="0 0 24 24"><path d="m9 3-3 18h3l1-5h4l1 5h3L15 3h-3l.6 4h-1.2L12 3H9Zm1.8 10 .5-3h1.4l.5 3h-2.4Z"/></symbol>
+      <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a5 5 0 0 0-6.4 6.4l-5.7 5.7 3 3 5.7-5.7a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3Z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M9 5 7.5 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3.5L15 5H9Zm3 4a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="m16.9 3.7 3.4 3.4L8 19.4 3 21l1.6-5L16.9 3.7ZM6.3 17l-.4 1.1 1.1-.4L17.5 7.1l-.6-.6L6.3 17Z"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V2ZM4 10v10h16V10H4Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M8 3h8l1 2h4v2H3V5h4l1-2Zm-3 6h14l-1 12H6L5 9Zm4 2v7h2v-7H9Zm4 0v7h2v-7h-2Z"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7-1.4-1.4 5.6-5.6-5.6-5.6L9 5Z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5.1 3.4 9.8 8 11 4.6-1.2 8-5.9 8-11V5l-8-3Zm0 3 5 1.9V11c0 3.6-2.2 6.8-5 7.9-2.8-1.1-5-4.3-5-7.9V6.9L12 5Z"/></symbol>
+    </svg>
+
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <span class="brand-mark"><svg><use href="#i-road"></use></svg></span>
+          <div><strong>МОЙ ГАРАЖ</strong><small>Журнал автомобилей</small></div>
+        </div>
+        <p class="nav-label">АВТОМОБИЛИ</p>
+        <nav id="carNav" aria-label="Автомобили"></nav>
+        <div class="sidebar-footer">
+          <button class="sync-card" id="syncSettings" type="button">
+            <span class="save-dot"></span>
+            <div><strong id="syncTitle">Локальный режим</strong><small id="syncText">Google Таблица не подключена</small></div>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="mobile-header">
+          <button class="icon-button" id="menuButton" aria-label="Открыть меню"><svg><use href="#i-menu"></use></svg></button>
+          <strong>МОЙ ГАРАЖ</strong>
+        </header>
+
+        <div class="page-wrap">
+          <section class="page-heading">
+            <div>
+              <p class="eyebrow">ЛИЧНЫЙ АВТОПАРК</p>
+              <h1 id="carTitle"></h1>
+              <p id="carSubtitle"></p>
+            </div>
+            <div class="heading-actions">
+              <span class="status-badge"><i></i><span id="carStatus">На ходу</span></span>
+              <button class="secondary-button" id="editCar"><svg><use href="#i-edit"></use></svg>Данные авто</button>
+            </div>
+          </section>
+
+          <section class="hero-card">
+            <div class="car-photo" id="carPhoto">
+              <div class="photo-placeholder">
+                <svg><use href="#i-car"></use></svg>
+                <span>Фото автомобиля</span>
+              </div>
+              <div class="photo-shade"></div>
+              <div class="photo-caption">
+                <span id="heroName"></span>
+                <small>Личный автомобиль</small>
+              </div>
+              <button class="photo-button" id="photoButton"><svg><use href="#i-camera"></use></svg><span>Добавить фото</span></button>
+              <input id="photoInput" type="file" accept="image/*" hidden>
+            </div>
+
+            <div class="hero-info">
+              <p class="section-kicker">ТЕКУЩИЕ ДАННЫЕ</p>
+              <div class="mileage-block">
+                <span class="round-icon"><svg><use href="#i-road"></use></svg></span>
+                <div><small>ПРОБЕГ</small><strong><span id="mileageValue"></span> <em>км</em></strong></div>
+                <button class="edit-button" id="editMileage" aria-label="Изменить пробег"><svg><use href="#i-edit"></use></svg></button>
+              </div>
+              <div class="mini-stats">
+                <div><small>ЗАПИСЕЙ</small><strong id="recordsCount">0</strong><span>работ</span></div>
+                <div><small>ПОСЛЕДНЕЕ ТО</small><strong id="lastService">—</strong><span>дата</span></div>
+              </div>
+              <div class="car-details">
+                <div><small>ГОД</small><strong id="carYear">—</strong></div>
+                <div><small>ГОСНОМЕР</small><strong id="carPlate">—</strong></div>
+                <div><small>VIN</small><strong id="carVin">—</strong></div>
+              </div>
+              <button class="primary-button" id="addRecord"><svg><use href="#i-plus"></use></svg>Добавить работу</button>
+            </div>
+          </section>
+
+          <section class="history-section">
+            <div class="section-title">
+              <div>
+                <span class="round-icon small"><svg><use href="#i-wrench"></use></svg></span>
+                <div><p class="section-kicker">СЕРВИСНАЯ КНИЖКА</p><h2>История работ</h2></div>
+              </div>
+              <button class="secondary-button" id="addRecordSecondary"><svg><use href="#i-plus"></use></svg>Новая запись</button>
+            </div>
+
+            <div class="records" id="recordsList"></div>
+            <div class="empty-state" id="emptyState">
+              <span><svg><use href="#i-wrench"></use></svg></span>
+              <h3>История пока пустая</h3>
+              <p>Добавьте первую выполненную работу, дату и пробег.</p>
+              <button class="text-button" id="emptyAdd">Добавить запись <svg><use href="#i-chevron"></use></svg></button>
+            </div>
+          </section>
+
+          <footer><svg><use href="#i-shield"></use></svg> Локальное сохранение работает всегда, Google Таблица подключается отдельно</footer>
+        </div>
+      </main>
+    </div>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <dialog id="recordDialog">
+      <form method="dialog" id="recordForm">
+        <div class="dialog-heading">
+          <div><p class="section-kicker">СЕРВИСНАЯ КНИЖКА</p><h2>Новая работа</h2></div>
+          <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <label>Что было сделано<input name="work" required maxlength="100" placeholder="Например, замена масла"></label>
+        <div class="form-row">
+          <label>Дата<input name="date" type="date" required></label>
+          <label>Пробег, км<input name="mileage" type="number" min="0" step="1" required placeholder="120 000"></label>
+        </div>
+        <label>Стоимость работ и запчастей, ₽<input name="cost" type="number" min="0" step="1" placeholder="Например, 3500"></label>
+        <label>Комментарий<textarea name="comment" rows="3" maxlength="240" placeholder="Запчасти или другие детали"></textarea></label>
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
+          <button class="primary-button" type="submit">Сохранить запись</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="mileageDialog">
+      <form method="dialog" id="mileageForm">
+        <div class="dialog-heading">
+          <div><p class="section-kicker">ОДОМЕТР</p><h2>Изменить пробег</h2></div>
+          <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <label>Текущий пробег, км<input name="mileage" type="number" min="0" step="1" required></label>
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
+          <button class="primary-button" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="carDialog">
+      <form id="carForm">
+        <div class="dialog-heading">
+          <div><p class="section-kicker">АВТОМОБИЛЬ</p><h2>Редактировать данные</h2></div>
+          <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <label>Название автомобиля<input name="name" required maxlength="60" placeholder="ВАЗ-2115"></label>
+        <div class="form-row">
+          <label>Год выпуска<input name="year" type="number" min="1900" max="2100" step="1" placeholder="2006"></label>
+          <label>Текущий пробег, км<input name="mileage" type="number" min="0" step="1" required></label>
+        </div>
+        <div class="form-row">
+          <label>Государственный номер<input name="plate" maxlength="20" placeholder="А123ВС 55"></label>
+          <label>Статус
+            <select name="status">
+              <option>На ходу</option>
+              <option>На ремонте</option>
+              <option>Не используется</option>
+            </select>
+          </label>
+        </div>
+        <label>VIN<input name="vin" maxlength="32" placeholder="XTA..."></label>
+        <label>Дополнительная информация<textarea name="note" rows="3" maxlength="300" placeholder="Комплектация, двигатель или другие сведения"></textarea></label>
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
+          <button class="primary-button" type="submit">Сохранить данные</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="syncDialog">
+      <form id="syncForm">
+        <div class="dialog-heading">
+          <div><p class="section-kicker">GOOGLE SHEETS</p><h2>Синхронизация</h2></div>
+          <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <label>URL веб-приложения Apps Script<input name="url" type="url" placeholder="https://script.google.com/macros/s/.../exec"></label>
+        <label>PIN синхронизации<input name="pin" type="password" autocomplete="current-password" placeholder="Например, 2115"></label>
+        <p class="form-hint">URL и PIN хранятся только в этом браузере. Их нужно один раз ввести на каждом телефоне.</p>
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" id="pullFromSheets">Загрузить из таблицы</button>
+          <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
+          <button class="primary-button" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
