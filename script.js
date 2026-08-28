@@ -247,16 +247,18 @@ function renderNav() {
 function renderRecords(car) {
   const records = sortRecords([...car.records]);
   elements.records.innerHTML = records.map((record) => `
-    <article class="record">
-      <div class="record-cell"><small>ДАТА</small><strong>${formatDate(record.date)}</strong></div>
-      <div class="record-cell"><small>ПРОБЕГ</small><strong>${formatMileage(record.mileage)} км</strong></div>
-      <div class="record-cell record-work"><small>ВЫПОЛНЕННАЯ РАБОТА</small><strong>${escapeHtml(record.work)}</strong></div>
-      <div class="record-cell record-cost"><small>СТОИМОСТЬ</small><strong>${formatCost(record.cost)}</strong></div>
-      <div class="record-cell record-comment"><small>КОММЕНТАРИЙ</small><strong>${escapeHtml(record.comment || "—")}</strong></div>
-      <div class="record-actions">
-        <button class="row-button" data-edit-record="${record.id}" aria-label="Редактировать запись"><svg><use href="#i-edit"></use></svg></button>
-        <button class="row-button danger" data-delete="${record.id}" aria-label="Удалить запись"><svg><use href="#i-trash"></use></svg></button>
+    <article class="record ${record.comment ? "has-comment" : ""}">
+      <div class="record-summary">
+        <div class="record-cell"><small>ДАТА</small><strong>${formatDate(record.date)}</strong></div>
+        <div class="record-cell"><small>ПРОБЕГ</small><strong>${formatMileage(record.mileage)} км</strong></div>
+        <div class="record-cell record-work"><small>ВЫПОЛНЕННАЯ РАБОТА</small><strong>${escapeHtml(record.work)}</strong></div>
+        <div class="record-cell record-cost"><small>СТОИМОСТЬ</small><strong>${formatCost(record.cost)}</strong></div>
+        <div class="record-actions">
+          <button class="row-button" data-edit-record="${record.id}" aria-label="Редактировать запись"><svg><use href="#i-edit"></use></svg></button>
+          <button class="row-button danger" data-delete="${record.id}" aria-label="Удалить запись"><svg><use href="#i-trash"></use></svg></button>
+        </div>
       </div>
+      ${record.comment ? `<div class="record-note"><small>КОММЕНТАРИЙ</small><p>${escapeHtml(record.comment)}</p></div>` : ""}
     </article>
   `).join("");
   elements.empty.hidden = records.length > 0;

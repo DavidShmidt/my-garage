@@ -179,17 +179,27 @@ h1 { margin: 9px 0 6px; font-size: clamp(2.25rem, 4vw, 3.65rem); line-height: 1;
 .secondary-button:hover { border-color: var(--accent); color: var(--accent); }
 .records { display: grid; gap: 9px; }
 .record {
-  display: grid; grid-template-columns: 120px 120px minmax(190px, 1fr) 110px minmax(130px, .65fr) 78px;
-  align-items: center; min-height: 78px; padding: 0 15px 0 22px;
+  display: grid; gap: 13px; min-height: 78px; padding: 18px 15px 18px 22px;
   border: 1px solid var(--line); border-radius: 11px; background: var(--surface);
   animation: rise .25s ease both;
 }
 .record:hover { border-color: var(--line-strong); background: #151916; }
+.record-summary {
+  display: grid; grid-template-columns: 120px 120px minmax(240px, 1fr) 110px 78px;
+  align-items: center; gap: 10px;
+}
 .record-cell small { display: block; margin-bottom: 5px; color: #666c65; font-size: .57rem; font-weight: 800; letter-spacing: .1em; }
 .record-cell strong { color: #dfe2dc; font-size: .75rem; font-weight: 600; }
 .record-work strong { color: var(--text); }
 .record-cost strong { color: var(--accent); }
-.record-comment strong { color: #969b94; font-weight: 500; }
+.record-note {
+  padding: 13px 15px;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+}
+.record-note small { display: block; margin-bottom: 7px; color: #666c65; font-size: .56rem; font-weight: 800; letter-spacing: .12em; }
+.record-note p { margin: 0; color: #aeb6bf; font-size: .74rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .record-actions { display: flex; justify-content: flex-end; gap: 4px; }
 .row-button { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #6e746c; background: transparent; cursor: pointer; }
 .row-button:hover { color: var(--accent); background: rgba(61,143,255,.1); }
@@ -256,8 +266,7 @@ textarea { resize: vertical; }
   .hero-card { grid-template-columns: 1fr; }
   .car-photo { min-height: 390px; }
   .hero-info { min-height: 310px; }
-  .record { grid-template-columns: 100px 105px 1fr 100px 74px; }
-  .record-comment { display: none; }
+  .record-summary { grid-template-columns: 100px 105px minmax(170px, 1fr) 100px 74px; }
 }
 
 @media (max-width: 720px) {
@@ -273,10 +282,11 @@ textarea { resize: vertical; }
   .heading-actions { margin-top: 19px; }
   .status-badge { margin-bottom: 0; }
   .car-photo { min-height: 330px; }
-  .record { grid-template-columns: 1fr auto; gap: 13px; padding: 17px; }
+  .record { padding: 17px; }
+  .record-summary { grid-template-columns: 1fr auto; gap: 13px; }
   .record-cell { grid-column: 1; }
   .record .record-actions { grid-column: 2; grid-row: 1 / span 5; }
-  .record-comment { display: block; }
+  .record-note { padding: 12px; }
   .task { grid-template-columns: 38px minmax(0, 1fr); }
   .task .record-actions { grid-column: 2; justify-content: flex-start; }
 }
