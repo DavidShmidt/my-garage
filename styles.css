@@ -185,11 +185,12 @@ h1 { margin: 9px 0 6px; font-size: clamp(2.25rem, 4vw, 3.65rem); line-height: 1;
 }
 .record:hover { border-color: var(--line-strong); background: #151916; }
 .record-summary {
-  display: grid; grid-template-columns: 120px 120px minmax(240px, 1fr) 110px 78px;
+  display: grid; grid-template-columns: 120px 120px minmax(280px, 1fr) 110px auto;
   align-items: center; gap: 10px;
 }
+.record-summary > * { min-width: 0; }
 .record-cell small { display: block; margin-bottom: 5px; color: #666c65; font-size: .57rem; font-weight: 800; letter-spacing: .1em; }
-.record-cell strong { color: #dfe2dc; font-size: .75rem; font-weight: 600; }
+.record-cell strong { color: #dfe2dc; font-size: .75rem; font-weight: 600; overflow-wrap: anywhere; }
 .record-work strong { color: var(--text); }
 .record-cost strong { color: var(--accent); }
 .record-note {
@@ -200,7 +201,7 @@ h1 { margin: 9px 0 6px; font-size: clamp(2.25rem, 4vw, 3.65rem); line-height: 1;
 }
 .record-note small { display: block; margin-bottom: 7px; color: #666c65; font-size: .56rem; font-weight: 800; letter-spacing: .12em; }
 .record-note p { margin: 0; color: #aeb6bf; font-size: .74rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
-.record-actions { display: flex; justify-content: flex-end; gap: 4px; }
+.record-actions { display: flex; justify-content: flex-end; gap: 4px; align-self: center; }
 .row-button { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #6e746c; background: transparent; cursor: pointer; }
 .row-button:hover { color: var(--accent); background: rgba(61,143,255,.1); }
 .row-button.danger:hover { color: var(--danger); background: rgba(237,118,94,.1); }
@@ -266,7 +267,7 @@ textarea { resize: vertical; }
   .hero-card { grid-template-columns: 1fr; }
   .car-photo { min-height: 390px; }
   .hero-info { min-height: 310px; }
-  .record-summary { grid-template-columns: 100px 105px minmax(170px, 1fr) 100px 74px; }
+  .record-summary { grid-template-columns: 100px 105px minmax(170px, 1fr) 100px auto; }
 }
 
 @media (max-width: 720px) {
@@ -285,7 +286,7 @@ textarea { resize: vertical; }
   .record { padding: 17px; }
   .record-summary { grid-template-columns: 1fr auto; gap: 13px; }
   .record-cell { grid-column: 1; }
-  .record .record-actions { grid-column: 2; grid-row: 1 / span 5; }
+  .record .record-actions { grid-column: 2; grid-row: 1 / span 4; align-self: start; }
   .record-note { padding: 12px; }
   .task { grid-template-columns: 38px minmax(0, 1fr); }
   .task .record-actions { grid-column: 2; justify-content: flex-start; }
