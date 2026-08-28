@@ -63,6 +63,7 @@ let pullTimer = null;
 let lastPullAt = 0;
 let isPullingFromSheets = false;
 let hasLoadedFromSheets = false;
+let pendingPushAfterPull = false;
 let syncStatusMessage = "";
 let syncSettings = loadSyncSettings();
 let editingRecordId = null;
@@ -171,7 +172,9 @@ function schedulePushToSheets() {
     return;
   }
   if (!hasLoadedFromSheets) {
-    updateSyncStatus("Сначала загрузите данные из таблицы");
+    pendingPushAfterPull = true;
+    updateSyncStatus("Подготовка синхронизации...");
+    pullFromSheets({ silent: true, preserveLocal: true });
     return;
   }
   clearTimeout(syncTimer);
@@ -181,7 +184,9 @@ function schedulePushToSheets() {
 function pushToSheets() {
   if (!isSyncEnabled()) return;
   if (!hasLoadedFromSheets) {
-    updateSyncStatus("Сначала загрузите данные из таблицы");
+    pendingPushAfterPull = true;
+    updateSyncStatus("Подготовка синхронизации...");
+    pullFromSheets({ silent: true, preserveLocal: true });
     return;
   }
   updateSyncStatus("Отправка данных...");
@@ -204,9 +209,10 @@ function pullFromSheets(options = {}) {
     if (!options.silent) alert("Сначала укажите URL Apps Script и PIN.");
     return;
   }
-  if (Date.now() - lastPullAt < 12000 && options.silent) return;
+  if (Date.now() - lastPullAt < 12000 && options.silent && !options.preserveLocal) return;
 
   updateSyncStatus("Загрузка из таблицы...");
+  const localCarsBeforePull = options.preserveLocal ? structuredClone(cars) : null;
   const callbackName = `garageSheets_${Date.now()}`;
   const url = new URL(syncSettings.googleScriptUrl);
   url.searchParams.set("action", "load");
@@ -221,7 +227,8 @@ function pullFromSheets(options = {}) {
       if (!options.silent) alert("Не удалось загрузить данные из Google Таблицы.");
       return;
     }
-    cars = response.cars.map((car, index) => ({ ...(defaultCars[index] || defaultCars[0]), ...car }));
+    const loadedCars = response.cars.map((car, index) => ({ ...(defaultCars[index] || defaultCars[0]), ...car }));
+    cars = localCarsBeforePull ? mergeCars(loadedCars, localCarsBeforePull) : loadedCars;
     cars.forEach((car) => {
       car.records ||= [];
       car.tasks ||= [];
@@ -235,6 +242,10 @@ function pullFromSheets(options = {}) {
     updateSyncStatus(`Загружено: ${new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`);
     elements.syncDialog.close();
     render();
+    if (pendingPushAfterPull) {
+      pendingPushAfterPull = false;
+      schedulePushToSheets();
+    }
   };
 
   const script = document.createElement("script");
@@ -246,6 +257,25 @@ function pullFromSheets(options = {}) {
     if (!options.silent) alert("Не удалось подключиться к Apps Script.");
   };
   document.head.appendChild(script);
+}
+
+function mergeCars(remoteCars, localCars) {
+  const localById = new Map(localCars.map((car) => [car.id, car]));
+  return remoteCars.map((remoteCar) => {
+    const localCar = localById.get(remoteCar.id);
+    if (!localCar) return remoteCar;
+    return {
+      ...remoteCar,
+      records: mergeById(remoteCar.records || [], localCar.records || []),
+      tasks: mergeById(remoteCar.tasks || [], localCar.tasks || [])
+    };
+  });
+}
+
+function mergeById(remoteItems, localItems) {
+  const merged = new Map(remoteItems.map((item) => [item.id, item]));
+  localItems.forEach((item) => merged.set(item.id, { ...(merged.get(item.id) || {}), ...item }));
+  return [...merged.values()];
 }
 
 function startAutoPull() {
