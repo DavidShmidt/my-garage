@@ -14,15 +14,18 @@ const defaultCars = [
     mileage: 315000,
     image: "assets/cars/vaz-2115.png",
     photo: "",
+    tasks: [
+      { id: crypto.randomUUID(), title: "Проверить тормоза", dueDate: "", mileage: 322000, priority: "Обычная", status: "Нужно сделать", comment: "Осмотреть колодки и направляющие" }
+    ],
     records: [
       { id: crypto.randomUUID(), date: "2024-05-15", mileage: 312000, work: "Замена масла и масляного фильтра", cost: 1800, comment: "Лукойл 10W-40" },
       { id: crypto.randomUUID(), date: "2024-02-02", mileage: 304500, work: "Регулировка клапанов", cost: 2000, comment: "Холодная регулировка" },
       { id: crypto.randomUUID(), date: "2023-10-21", mileage: 298000, work: "Проверка лямбда-зонда", cost: 1200, comment: "Показания в норме" }
     ]
   },
-  { id: "polo-sedan", name: "VW Polo Sedan", meta: "5 поколение", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/polo-sedan.png", photo: "", records: [] },
-  { id: "renault-sandero", name: "Renault Sandero", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/renault-sandero.png", photo: "", records: [] },
-  { id: "lada-largus", name: "Lada Largus", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/lada-largus.png", photo: "", records: [] }
+  { id: "polo-sedan", name: "VW Polo Sedan", meta: "5 поколение", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/polo-sedan.png", photo: "", tasks: [], records: [] },
+  { id: "renault-sandero", name: "Renault Sandero", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/renault-sandero.png", photo: "", tasks: [], records: [] },
+  { id: "lada-largus", name: "Lada Largus", meta: "Личный автомобиль", year: "", plate: "", vin: "", status: "На ходу", note: "", mileage: 0, image: "assets/cars/lada-largus.png", photo: "", tasks: [], records: [] }
 ];
 
 function loadCars() {
@@ -45,6 +48,8 @@ let isPullingFromSheets = false;
 let hasLoadedFromSheets = false;
 let syncStatusMessage = "";
 let syncSettings = loadSyncSettings();
+let editingRecordId = null;
+let editingTaskId = null;
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -59,8 +64,14 @@ const elements = {
   photoInput: $("#photoInput"),
   records: $("#recordsList"),
   empty: $("#emptyState"),
+  tasks: $("#tasksList"),
+  emptyTasks: $("#emptyTasks"),
   recordDialog: $("#recordDialog"),
   recordForm: $("#recordForm"),
+  recordDialogTitle: $("#recordDialogTitle"),
+  taskDialog: $("#taskDialog"),
+  taskForm: $("#taskForm"),
+  taskDialogTitle: $("#taskDialogTitle"),
   mileageDialog: $("#mileageDialog"),
   mileageForm: $("#mileageForm"),
   carDialog: $("#carDialog"),
@@ -80,6 +91,14 @@ const formatDate = (value) => new Intl.DateTimeFormat("ru-RU").format(new Date(`
 const sortRecords = (records) => records.sort((a, b) =>
   b.date.localeCompare(a.date) || Number(b.mileage) - Number(a.mileage)
 );
+const sortTasks = (tasks) => tasks.sort((a, b) => {
+  const statusScore = { "Нужно сделать": 0, "В работе": 1, "Сделано": 2 };
+  const priorityScore = { "Срочно": 0, "Скоро": 1, "Обычная": 2 };
+  return (statusScore[a.status] ?? 0) - (statusScore[b.status] ?? 0)
+    || (priorityScore[a.priority] ?? 2) - (priorityScore[b.priority] ?? 2)
+    || (a.dueDate || "9999-12-31").localeCompare(b.dueDate || "9999-12-31")
+    || Number(a.mileage || 0) - Number(b.mileage || 0);
+});
 
 function save() {
   try {
@@ -183,6 +202,10 @@ function pullFromSheets(options = {}) {
       return;
     }
     cars = response.cars.map((car, index) => ({ ...(defaultCars[index] || defaultCars[0]), ...car }));
+    cars.forEach((car) => {
+      car.records ||= [];
+      car.tasks ||= [];
+    });
     if (!cars.some((car) => car.id === activeId)) activeId = cars[0]?.id || defaultCars[0].id;
     isPullingFromSheets = true;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
@@ -230,11 +253,44 @@ function renderRecords(car) {
       <div class="record-cell record-work"><small>ВЫПОЛНЕННАЯ РАБОТА</small><strong>${escapeHtml(record.work)}</strong></div>
       <div class="record-cell record-cost"><small>СТОИМОСТЬ</small><strong>${formatCost(record.cost)}</strong></div>
       <div class="record-cell record-comment"><small>КОММЕНТАРИЙ</small><strong>${escapeHtml(record.comment || "—")}</strong></div>
-      <button class="delete-button" data-delete="${record.id}" aria-label="Удалить запись"><svg><use href="#i-trash"></use></svg></button>
+      <div class="record-actions">
+        <button class="row-button" data-edit-record="${record.id}" aria-label="Редактировать запись"><svg><use href="#i-edit"></use></svg></button>
+        <button class="row-button danger" data-delete="${record.id}" aria-label="Удалить запись"><svg><use href="#i-trash"></use></svg></button>
+      </div>
     </article>
   `).join("");
   elements.empty.hidden = records.length > 0;
   elements.records.hidden = records.length === 0;
+}
+
+function renderTasks(car) {
+  const tasks = sortTasks([...(car.tasks || [])]);
+  elements.tasks.innerHTML = tasks.map((task) => `
+    <article class="task ${task.status === "Сделано" ? "done" : ""}">
+      <button class="task-check" data-toggle-task="${task.id}" aria-label="Отметить задачу">
+        <svg><use href="#i-check"></use></svg>
+      </button>
+      <div class="task-main">
+        <div class="task-top">
+          <strong>${escapeHtml(task.title)}</strong>
+          <span class="task-priority ${priorityClass(task.priority)}">${escapeHtml(task.priority || "Обычная")}</span>
+        </div>
+        <p>${task.dueDate ? `до ${formatDate(task.dueDate)}` : "без даты"}${task.mileage ? ` · ${formatMileage(task.mileage)} км` : ""}${task.comment ? ` · ${escapeHtml(task.comment)}` : ""}</p>
+      </div>
+      <div class="record-actions">
+        <button class="row-button" data-edit-task="${task.id}" aria-label="Редактировать задачу"><svg><use href="#i-edit"></use></svg></button>
+        <button class="row-button danger" data-delete-task="${task.id}" aria-label="Удалить задачу"><svg><use href="#i-trash"></use></svg></button>
+      </div>
+    </article>
+  `).join("");
+  elements.emptyTasks.hidden = tasks.length > 0;
+  elements.tasks.hidden = tasks.length === 0;
+}
+
+function priorityClass(priority) {
+  if (priority === "Срочно") return "urgent";
+  if (priority === "Скоро") return "soon";
+  return "";
 }
 
 function render() {
@@ -256,6 +312,7 @@ function render() {
   elements.photo.classList.toggle("has-photo", Boolean(carImage));
   elements.photo.style.backgroundImage = carImage ? `url("${carImage}")` : "";
   $("#photoButton span").textContent = car.photo ? "Заменить фото" : "Добавить фото";
+  renderTasks(car);
   renderRecords(car);
   updateSyncStatus();
   document.title = `${car.name} · Мой гараж`;
@@ -267,13 +324,35 @@ function escapeHtml(value) {
   return element.innerHTML;
 }
 
-function openRecordDialog() {
+function openRecordDialog(recordId = null) {
   const car = activeCar();
   elements.recordForm.reset();
-  elements.recordForm.elements.date.value = new Date().toISOString().slice(0, 10);
-  elements.recordForm.elements.mileage.value = car.mileage || "";
+  editingRecordId = recordId;
+  elements.recordDialogTitle.textContent = recordId ? "Редактировать работу" : "Новая работа";
+  const record = car.records.find((item) => item.id === recordId);
+  elements.recordForm.elements.work.value = record?.work || "";
+  elements.recordForm.elements.date.value = record?.date || new Date().toISOString().slice(0, 10);
+  elements.recordForm.elements.mileage.value = record?.mileage || car.mileage || "";
+  elements.recordForm.elements.cost.value = record?.cost ?? "";
+  elements.recordForm.elements.comment.value = record?.comment || "";
   elements.recordDialog.showModal();
   setTimeout(() => elements.recordForm.elements.work.focus(), 50);
+}
+
+function openTaskDialog(taskId = null) {
+  const car = activeCar();
+  elements.taskForm.reset();
+  editingTaskId = taskId;
+  elements.taskDialogTitle.textContent = taskId ? "Редактировать задачу" : "Новая задача";
+  const task = (car.tasks || []).find((item) => item.id === taskId);
+  elements.taskForm.elements.title.value = task?.title || "";
+  elements.taskForm.elements.dueDate.value = task?.dueDate || "";
+  elements.taskForm.elements.mileage.value = task?.mileage || "";
+  elements.taskForm.elements.priority.value = task?.priority || "Обычная";
+  elements.taskForm.elements.status.value = task?.status || "Нужно сделать";
+  elements.taskForm.elements.comment.value = task?.comment || "";
+  elements.taskDialog.showModal();
+  setTimeout(() => elements.taskForm.elements.title.focus(), 50);
 }
 
 function closeMenu() {
@@ -291,7 +370,11 @@ elements.nav.addEventListener("click", (event) => {
 });
 
 ["#addRecord", "#addRecordSecondary", "#emptyAdd"].forEach((selector) => {
-  $(selector).addEventListener("click", openRecordDialog);
+  $(selector).addEventListener("click", () => openRecordDialog());
+});
+
+["#addTask", "#emptyTaskAdd"].forEach((selector) => {
+  $(selector).addEventListener("click", () => openTaskDialog());
 });
 
 elements.recordForm.addEventListener("submit", (event) => {
@@ -299,16 +382,25 @@ elements.recordForm.addEventListener("submit", (event) => {
   const data = new FormData(elements.recordForm);
   const mileage = Number(data.get("mileage"));
   const car = activeCar();
-  car.records.push({
-    id: crypto.randomUUID(),
+  const record = editingRecordId
+    ? car.records.find((item) => item.id === editingRecordId)
+    : null;
+  const nextRecord = {
+    id: record?.id || crypto.randomUUID(),
     work: String(data.get("work")).trim(),
     date: String(data.get("date")),
     mileage,
     cost: data.get("cost") === "" ? null : Number(data.get("cost")),
     comment: String(data.get("comment")).trim()
-  });
+  };
+  if (record) {
+    Object.assign(record, nextRecord);
+  } else {
+    car.records.push(nextRecord);
+  }
   sortRecords(car.records);
   if (mileage > car.mileage) car.mileage = mileage;
+  editingRecordId = null;
   save();
   elements.recordDialog.close();
   render();
@@ -320,6 +412,66 @@ elements.records.addEventListener("click", (event) => {
   const car = activeCar();
   car.records = car.records.filter((record) => record.id !== button.dataset.delete);
   save();
+  render();
+});
+
+elements.records.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-edit-record]");
+  if (!button) return;
+  openRecordDialog(button.dataset.editRecord);
+});
+
+elements.tasks.addEventListener("click", (event) => {
+  const car = activeCar();
+  const completeButton = event.target.closest("[data-toggle-task]");
+  if (completeButton) {
+    const task = (car.tasks || []).find((item) => item.id === completeButton.dataset.toggleTask);
+    if (!task) return;
+    task.status = task.status === "Сделано" ? "Нужно сделать" : "Сделано";
+    save();
+    render();
+    return;
+  }
+
+  const editButton = event.target.closest("[data-edit-task]");
+  if (editButton) {
+    openTaskDialog(editButton.dataset.editTask);
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-task]");
+  if (!deleteButton) return;
+  car.tasks = (car.tasks || []).filter((task) => task.id !== deleteButton.dataset.deleteTask);
+  save();
+  render();
+});
+
+elements.taskForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const data = new FormData(elements.taskForm);
+  const car = activeCar();
+  car.tasks ||= [];
+  const task = editingTaskId
+    ? car.tasks.find((item) => item.id === editingTaskId)
+    : null;
+  const nextTask = {
+    id: task?.id || crypto.randomUUID(),
+    title: String(data.get("title")).trim(),
+    dueDate: String(data.get("dueDate") || ""),
+    mileage: data.get("mileage") === "" ? "" : Number(data.get("mileage")),
+    priority: String(data.get("priority") || "Обычная"),
+    status: String(data.get("status") || "Нужно сделать"),
+    comment: String(data.get("comment")).trim()
+  };
+  if (task) {
+    Object.assign(task, nextTask);
+  } else {
+    car.tasks.push(nextTask);
+  }
+  sortTasks(car.tasks);
+  editingTaskId = null;
+  save();
+  elements.taskDialog.close();
   render();
 });
 

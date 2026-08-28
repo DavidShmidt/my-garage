@@ -51,11 +51,14 @@ function readCars_() {
   const spreadsheet = ss_();
   const carsSheet = spreadsheet.getSheetByName("Cars");
   const recordsSheet = spreadsheet.getSheetByName("Records");
+  const tasksSheet = spreadsheet.getSheetByName("Tasks");
   if (!carsSheet) return [];
 
   const carsRows = carsSheet.getDataRange().getValues().slice(1);
   const recordRows = recordsSheet ? recordsSheet.getDataRange().getValues().slice(1) : [];
+  const taskRows = tasksSheet ? tasksSheet.getDataRange().getValues().slice(1) : [];
   const recordsByCar = {};
+  const tasksByCar = {};
 
   recordRows.forEach(row => {
     if (row[7]) return;
@@ -72,6 +75,22 @@ function readCars_() {
     recordsByCar[carId].push(record);
   });
 
+  taskRows.forEach(row => {
+    if (row[8]) return;
+    const task = {
+      id: String(row[0] || Utilities.getUuid()),
+      title: String(row[2] || ""),
+      dueDate: toIsoDate_(row[3]),
+      mileage: row[4] === "" ? "" : Number(row[4] || 0),
+      priority: String(row[5] || "Обычная"),
+      status: String(row[6] || "Нужно сделать"),
+      comment: String(row[7] || "")
+    };
+    const carId = String(row[1] || "");
+    if (!tasksByCar[carId]) tasksByCar[carId] = [];
+    tasksByCar[carId].push(task);
+  });
+
   return carsRows.map(row => {
     if (row[10]) return null;
     const id = String(row[0] || "");
@@ -86,6 +105,7 @@ function readCars_() {
       note: String(row[7] || ""),
       mileage: Number(row[8] || 0),
       photo: String(row[9] || ""),
+      tasks: tasksByCar[id] || [],
       records: recordsByCar[id] || []
     };
   }).filter(car => car && car.id);
@@ -97,10 +117,12 @@ function writeCars_(cars) {
   try {
     const carsSheet = ensureSheet_("Cars", ["id", "name", "meta", "year", "plate", "vin", "status", "note", "mileage", "photo", "deleted_at", "updated_at"]);
     const recordsSheet = ensureSheet_("Records", ["id", "car_id", "date", "mileage", "work", "cost", "comment", "deleted_at", "updated_at"]);
+    const tasksSheet = ensureSheet_("Tasks", ["id", "car_id", "title", "due_date", "mileage", "priority", "status", "comment", "deleted_at", "updated_at"]);
     backup_(cars);
 
     const incomingCarIds = {};
     const incomingRecordIds = {};
+    const incomingTaskIds = {};
 
     cars.forEach(car => {
       incomingCarIds[car.id] = true;
@@ -134,10 +156,28 @@ function writeCars_(cars) {
           new Date()
         ]);
       });
+
+      (car.tasks || []).forEach(task => {
+        const taskId = String(task.id || Utilities.getUuid());
+        incomingTaskIds[taskId] = true;
+        upsertRow_(tasksSheet, taskId, [
+          taskId,
+          car.id,
+          task.title || "",
+          task.dueDate || "",
+          task.mileage === "" ? "" : Number(task.mileage || 0),
+          task.priority || "Обычная",
+          task.status || "Нужно сделать",
+          task.comment || "",
+          "",
+          new Date()
+        ]);
+      });
     });
 
     markMissingRowsDeleted_(carsSheet, incomingCarIds);
     markMissingRowsDeleted_(recordsSheet, incomingRecordIds);
+    markMissingRowsDeleted_(tasksSheet, incomingTaskIds);
   } finally {
     lock.releaseLock();
   }

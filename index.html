@@ -17,6 +17,7 @@
       <symbol id="i-edit" viewBox="0 0 24 24"><path d="m16.9 3.7 3.4 3.4L8 19.4 3 21l1.6-5L16.9 3.7ZM6.3 17l-.4 1.1 1.1-.4L17.5 7.1l-.6-.6L6.3 17Z"/></symbol>
       <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V2ZM4 10v10h16V10H4Z"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path d="M8 3h8l1 2h4v2H3V5h4l1-2Zm-3 6h14l-1 12H6L5 9Zm4 2v7h2v-7H9Zm4 0v7h2v-7h-2Z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m9.2 16.6-4.3-4.3-1.4 1.4 5.7 5.7L21 7.6l-1.4-1.4L9.2 16.6Z"/></symbol>
       <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></symbol>
       <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"/></symbol>
       <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7-1.4-1.4 5.6-5.6-5.6-5.6L9 5Z"/></symbol>
@@ -96,6 +97,24 @@
             </div>
           </section>
 
+          <section class="tasks-section">
+            <div class="section-title">
+              <div>
+                <span class="round-icon small"><svg><use href="#i-check"></use></svg></span>
+                <div><p class="section-kicker">ПЛАН РАБОТ</p><h2>Что нужно сделать</h2></div>
+              </div>
+              <button class="secondary-button" id="addTask"><svg><use href="#i-plus"></use></svg>Новая задача</button>
+            </div>
+
+            <div class="tasks" id="tasksList"></div>
+            <div class="empty-state" id="emptyTasks">
+              <span><svg><use href="#i-check"></use></svg></span>
+              <h3>План пока пустой</h3>
+              <p>Запишите, что нужно заменить, проверить или отремонтировать.</p>
+              <button class="text-button" id="emptyTaskAdd">Добавить задачу <svg><use href="#i-chevron"></use></svg></button>
+            </div>
+          </section>
+
           <section class="history-section">
             <div class="section-title">
               <div>
@@ -124,7 +143,7 @@
     <dialog id="recordDialog">
       <form method="dialog" id="recordForm">
         <div class="dialog-heading">
-          <div><p class="section-kicker">СЕРВИСНАЯ КНИЖКА</p><h2>Новая работа</h2></div>
+          <div><p class="section-kicker">СЕРВИСНАЯ КНИЖКА</p><h2 id="recordDialogTitle">Новая работа</h2></div>
           <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
         </div>
         <label>Что было сделано<input name="work" required maxlength="100" placeholder="Например, замена масла"></label>
@@ -137,6 +156,41 @@
         <div class="dialog-actions">
           <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
           <button class="primary-button" type="submit">Сохранить запись</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="taskDialog">
+      <form method="dialog" id="taskForm">
+        <div class="dialog-heading">
+          <div><p class="section-kicker">ПЛАН РАБОТ</p><h2 id="taskDialogTitle">Новая задача</h2></div>
+          <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <label>Что нужно сделать<input name="title" required maxlength="120" placeholder="Например, проверить тормоза"></label>
+        <div class="form-row">
+          <label>Плановая дата<input name="dueDate" type="date"></label>
+          <label>Пробег, км<input name="mileage" type="number" min="0" step="1" placeholder="320000"></label>
+        </div>
+        <div class="form-row">
+          <label>Важность
+            <select name="priority">
+              <option>Обычная</option>
+              <option>Скоро</option>
+              <option>Срочно</option>
+            </select>
+          </label>
+          <label>Статус
+            <select name="status">
+              <option>Нужно сделать</option>
+              <option>В работе</option>
+              <option>Сделано</option>
+            </select>
+          </label>
+        </div>
+        <label>Комментарий<textarea name="comment" rows="3" maxlength="240" placeholder="Что купить, где посмотреть, артикулы"></textarea></label>
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" data-close-dialog>Отмена</button>
+          <button class="primary-button" type="submit">Сохранить задачу</button>
         </div>
       </form>
     </dialog>
@@ -202,7 +256,7 @@
       </form>
     </dialog>
 
-    <script src="config.js?v=20260623-cars"></script>
-    <script src="script.js?v=20260623-cars"></script>
+    <script src="config.js?v=20260828-tasks"></script>
+    <script src="script.js?v=20260828-tasks"></script>
   </body>
 </html>
