@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#090d13">
     <title>Мой гараж</title>
-    <link rel="stylesheet" href="styles.css?v=20260828-icons">
+    <link rel="stylesheet" href="styles.css?v=20260828-task-categories">
   </head>
   <body>
     <svg class="icon-sprite" aria-hidden="true">
@@ -106,6 +106,7 @@
               <button class="secondary-button" id="addTask"><svg><use href="#i-plus"></use></svg>Новая задача</button>
             </div>
 
+            <div class="task-filters" id="taskFilters" aria-label="Фильтр задач по категории"></div>
             <div class="tasks" id="tasksList"></div>
             <div class="empty-state" id="emptyTasks">
               <span><svg><use href="#i-check"></use></svg></span>
@@ -167,6 +168,24 @@
           <button class="close-button" type="button" data-close-dialog aria-label="Закрыть"><svg><use href="#i-close"></use></svg></button>
         </div>
         <label>Что нужно сделать<input name="title" required maxlength="120" placeholder="Например, проверить тормоза"></label>
+        <label>Категория
+          <select name="category">
+            <option>Двигатель</option>
+            <option>КПП / сцепление</option>
+            <option>Подвеска</option>
+            <option>Тормоза</option>
+            <option>Рулевое</option>
+            <option>Электрика</option>
+            <option>Кузов</option>
+            <option>Салон</option>
+            <option>Колёса / шины</option>
+            <option>Жидкости</option>
+            <option>Плановое ТО</option>
+            <option>Диагностика</option>
+            <option>Покупки</option>
+            <option>Прочее</option>
+          </select>
+        </label>
         <div class="form-row">
           <label>Плановая дата<input name="dueDate" type="date"></label>
           <label>Пробег, км<input name="mileage" type="number" min="0" step="1" placeholder="320000"></label>
@@ -257,6 +276,6 @@
     </dialog>
 
     <script src="config.js?v=20260828-comments"></script>
-    <script src="script.js?v=20260828-icons"></script>
+    <script src="script.js?v=20260828-task-categories"></script>
   </body>
 </html>

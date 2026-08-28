@@ -84,7 +84,8 @@ function readCars_() {
       mileage: row[4] === "" ? "" : Number(row[4] || 0),
       priority: String(row[5] || "Обычная"),
       status: String(row[6] || "Нужно сделать"),
-      comment: String(row[7] || "")
+      comment: String(row[7] || ""),
+      category: String(row[10] || "Прочее")
     };
     const carId = String(row[1] || "");
     if (!tasksByCar[carId]) tasksByCar[carId] = [];
@@ -117,7 +118,7 @@ function writeCars_(cars) {
   try {
     const carsSheet = ensureSheet_("Cars", ["id", "name", "meta", "year", "plate", "vin", "status", "note", "mileage", "photo", "deleted_at", "updated_at"]);
     const recordsSheet = ensureSheet_("Records", ["id", "car_id", "date", "mileage", "work", "cost", "comment", "deleted_at", "updated_at"]);
-    const tasksSheet = ensureSheet_("Tasks", ["id", "car_id", "title", "due_date", "mileage", "priority", "status", "comment", "deleted_at", "updated_at"]);
+    const tasksSheet = ensureSheet_("Tasks", ["id", "car_id", "title", "due_date", "mileage", "priority", "status", "comment", "deleted_at", "updated_at", "category"]);
     backup_(cars);
 
     const incomingCarIds = {};
@@ -170,7 +171,8 @@ function writeCars_(cars) {
           task.status || "Нужно сделать",
           task.comment || "",
           "",
-          new Date()
+          new Date(),
+          task.category || "Прочее"
         ]);
       });
     });

@@ -1,5 +1,22 @@
 const STORAGE_KEY = "my-garage-v1";
 const SYNC_SETTINGS_KEY = "my-garage-sync-v1";
+const TASK_CATEGORIES = [
+  "Двигатель",
+  "КПП / сцепление",
+  "Подвеска",
+  "Тормоза",
+  "Рулевое",
+  "Электрика",
+  "Кузов",
+  "Салон",
+  "Колёса / шины",
+  "Жидкости",
+  "Плановое ТО",
+  "Диагностика",
+  "Покупки",
+  "Прочее"
+];
+const DEFAULT_TASK_CATEGORY = "Прочее";
 
 const defaultCars = [
   {
@@ -15,7 +32,7 @@ const defaultCars = [
     image: "assets/cars/vaz-2115.png",
     photo: "",
     tasks: [
-      { id: crypto.randomUUID(), title: "Проверить тормоза", dueDate: "", mileage: 322000, priority: "Обычная", status: "Нужно сделать", comment: "Осмотреть колодки и направляющие" }
+      { id: crypto.randomUUID(), title: "Проверить тормоза", category: "Тормоза", dueDate: "", mileage: 322000, priority: "Обычная", status: "Нужно сделать", comment: "Осмотреть колодки и направляющие" }
     ],
     records: [
       { id: crypto.randomUUID(), date: "2024-05-15", mileage: 312000, work: "Замена масла и масляного фильтра", cost: 1800, comment: "Лукойл 10W-40" },
@@ -50,6 +67,7 @@ let syncStatusMessage = "";
 let syncSettings = loadSyncSettings();
 let editingRecordId = null;
 let editingTaskId = null;
+let activeTaskCategory = "Все";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -65,6 +83,7 @@ const elements = {
   records: $("#recordsList"),
   empty: $("#emptyState"),
   tasks: $("#tasksList"),
+  taskFilters: $("#taskFilters"),
   emptyTasks: $("#emptyTasks"),
   recordDialog: $("#recordDialog"),
   recordForm: $("#recordForm"),
@@ -83,6 +102,7 @@ const elements = {
 };
 
 const activeCar = () => cars.find((car) => car.id === activeId);
+const taskCategory = (task) => TASK_CATEGORIES.includes(task?.category) ? task.category : DEFAULT_TASK_CATEGORY;
 const formatMileage = (value) => new Intl.NumberFormat("ru-RU").format(Number(value) || 0);
 const formatCost = (value) => value === "" || value === null || value === undefined
   ? "—"
@@ -266,7 +286,11 @@ function renderRecords(car) {
 }
 
 function renderTasks(car) {
-  const tasks = sortTasks([...(car.tasks || [])]);
+  const allTasks = sortTasks([...(car.tasks || [])]);
+  const tasks = activeTaskCategory === "Все"
+    ? allTasks
+    : allTasks.filter((task) => taskCategory(task) === activeTaskCategory);
+  renderTaskFilters(allTasks);
   elements.tasks.innerHTML = tasks.map((task) => `
     <article class="task ${task.status === "Сделано" ? "done" : ""}">
       <button class="task-check" data-toggle-task="${task.id}" aria-label="Отметить задачу">
@@ -275,6 +299,7 @@ function renderTasks(car) {
       <div class="task-main">
         <div class="task-top">
           <strong>${escapeHtml(task.title)}</strong>
+          <span class="task-category">${escapeHtml(taskCategory(task))}</span>
           <span class="task-priority ${priorityClass(task.priority)}">${escapeHtml(task.priority || "Обычная")}</span>
         </div>
         <p>${task.dueDate ? `до ${formatDate(task.dueDate)}` : "без даты"}${task.mileage ? ` · ${formatMileage(task.mileage)} км` : ""}${task.comment ? ` · ${escapeHtml(task.comment)}` : ""}</p>
@@ -287,6 +312,22 @@ function renderTasks(car) {
   `).join("");
   elements.emptyTasks.hidden = tasks.length > 0;
   elements.tasks.hidden = tasks.length === 0;
+}
+
+function renderTaskFilters(tasks) {
+  const counts = tasks.reduce((result, task) => {
+    const category = taskCategory(task);
+    result[category] = (result[category] || 0) + 1;
+    return result;
+  }, {});
+  const visibleCategories = TASK_CATEGORIES.filter((category) => counts[category]);
+  const filters = ["Все", ...visibleCategories];
+  if (activeTaskCategory !== "Все" && !filters.includes(activeTaskCategory)) activeTaskCategory = "Все";
+  elements.taskFilters.hidden = filters.length <= 1;
+  elements.taskFilters.innerHTML = filters.map((category) => {
+    const count = category === "Все" ? tasks.length : counts[category];
+    return `<button type="button" class="${category === activeTaskCategory ? "active" : ""}" data-task-category="${escapeHtml(category)}">${escapeHtml(category)} <span>${count}</span></button>`;
+  }).join("");
 }
 
 function priorityClass(priority) {
@@ -348,6 +389,7 @@ function openTaskDialog(taskId = null) {
   elements.taskDialogTitle.textContent = taskId ? "Редактировать задачу" : "Новая задача";
   const task = (car.tasks || []).find((item) => item.id === taskId);
   elements.taskForm.elements.title.value = task?.title || "";
+  elements.taskForm.elements.category.value = taskCategory(task);
   elements.taskForm.elements.dueDate.value = task?.dueDate || "";
   elements.taskForm.elements.mileage.value = task?.mileage || "";
   elements.taskForm.elements.priority.value = task?.priority || "Обычная";
@@ -369,6 +411,13 @@ elements.nav.addEventListener("click", (event) => {
   render();
   closeMenu();
   window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+elements.taskFilters.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-task-category]");
+  if (!button) return;
+  activeTaskCategory = button.dataset.taskCategory;
+  render();
 });
 
 ["#addRecord", "#addRecordSecondary", "#emptyAdd"].forEach((selector) => {
@@ -459,6 +508,7 @@ elements.taskForm.addEventListener("submit", (event) => {
   const nextTask = {
     id: task?.id || crypto.randomUUID(),
     title: String(data.get("title")).trim(),
+    category: String(data.get("category") || DEFAULT_TASK_CATEGORY),
     dueDate: String(data.get("dueDate") || ""),
     mileage: data.get("mileage") === "" ? "" : Number(data.get("mileage")),
     priority: String(data.get("priority") || "Обычная"),
