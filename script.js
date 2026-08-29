@@ -1,5 +1,7 @@
 const STORAGE_KEY = "my-garage-v1";
 const SYNC_SETTINGS_KEY = "my-garage-sync-v1";
+const BACKUP_KEY = "my-garage-backups-v1";
+const MAX_BACKUPS = 20;
 const TASK_CATEGORIES = [
   "Двигатель",
   "КПП / сцепление",
@@ -123,6 +125,7 @@ const sortTasks = (tasks) => tasks.sort((a, b) => {
 
 function save() {
   try {
+    createLocalBackup("save");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
     if (!isPullingFromSheets) schedulePushToSheets();
     return true;
@@ -130,6 +133,48 @@ function save() {
     alert("Не удалось сохранить данные. Возможно, хранилище браузера заполнено.");
     return false;
   }
+}
+
+function createLocalBackup(reason) {
+  try {
+    const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+    backups.unshift({
+      reason,
+      createdAt: new Date().toISOString(),
+      cars: structuredClone(cars)
+    });
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(backups.slice(0, MAX_BACKUPS)));
+  } catch {}
+}
+
+function getLocalBackups() {
+  try {
+    const backups = JSON.parse(localStorage.getItem(BACKUP_KEY) || "[]");
+    return Array.isArray(backups) ? backups : [];
+  } catch {
+    return [];
+  }
+}
+
+function restoreLatestBackup() {
+  const backups = getLocalBackups();
+  if (!backups.length) {
+    alert("Локальных копий пока нет.");
+    return;
+  }
+  const latest = backups[0];
+  const time = new Date(latest.createdAt).toLocaleString("ru-RU");
+  if (!confirm(`Вернуть локальную копию от ${time}? Текущие данные тоже будут сохранены в резервную копию.`)) return;
+  createLocalBackup("before-restore");
+  cars = structuredClone(latest.cars);
+  cars.forEach((car) => {
+    car.records ||= [];
+    car.tasks ||= [];
+  });
+  if (!cars.some((car) => car.id === activeId)) activeId = cars[0]?.id || defaultCars[0].id;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cars));
+  updateSyncStatus(`Восстановлено: ${time}`);
+  render();
 }
 
 function loadSyncSettings() {
@@ -212,6 +257,7 @@ function pullFromSheets(options = {}) {
   if (Date.now() - lastPullAt < 12000 && options.silent && !options.preserveLocal) return;
 
   updateSyncStatus("Загрузка из таблицы...");
+  createLocalBackup("before-pull");
   const localCarsBeforePull = options.preserveLocal ? structuredClone(cars) : null;
   const callbackName = `garageSheets_${Date.now()}`;
   const url = new URL(syncSettings.googleScriptUrl);
@@ -281,8 +327,8 @@ function mergeById(remoteItems, localItems) {
 function startAutoPull() {
   clearInterval(pullTimer);
   if (!isSyncEnabled()) return;
-  setTimeout(() => pullFromSheets({ silent: true }), 900);
-  pullTimer = setInterval(() => pullFromSheets({ silent: true }), 30000);
+  setTimeout(() => pullFromSheets({ silent: true, preserveLocal: true }), 900);
+  pullTimer = setInterval(() => pullFromSheets({ silent: true, preserveLocal: true }), 30000);
 }
 
 function renderNav() {
@@ -619,12 +665,13 @@ elements.syncForm.addEventListener("submit", (event) => {
   elements.syncDialog.close();
   if (isSyncEnabled()) {
     startAutoPull();
-    pullFromSheets({ silent: true });
+    pullFromSheets({ silent: true, preserveLocal: true });
   }
 });
 
-$("#pullFromSheets").addEventListener("click", pullFromSheets);
-$("#refreshFromSheets").addEventListener("click", () => pullFromSheets({ silent: false }));
+$("#pullFromSheets").addEventListener("click", () => pullFromSheets({ silent: false, preserveLocal: true }));
+$("#refreshFromSheets").addEventListener("click", () => pullFromSheets({ silent: false, preserveLocal: true }));
+$("#restoreLocalBackup").addEventListener("click", restoreLatestBackup);
 
 $("#photoButton").addEventListener("click", () => elements.photoInput.click());
 elements.photoInput.addEventListener("change", () => {
@@ -651,7 +698,7 @@ window.addEventListener("hashchange", () => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) pullFromSheets({ silent: true });
+  if (!document.hidden) pullFromSheets({ silent: true, preserveLocal: true });
 });
 
 render();

@@ -91,6 +91,8 @@ svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
   cursor: pointer;
 }
 .refresh-button:hover { border-color: var(--accent); color: #fff; }
+.refresh-button.subtle { border-color: var(--line); color: #aeb6bf; background: rgba(255,255,255,.025); }
+.refresh-button.subtle:hover { border-color: rgba(61,143,255,.35); color: #fff; }
 .sync-card { width: 100%; display: flex; gap: 10px; align-items: center; padding: 15px; border: 1px solid var(--line); border-radius: 10px; color: inherit; background: #111720; text-align: left; cursor: pointer; }
 .sync-card:hover { border-color: rgba(61,143,255,.45); }
 .sync-card strong, .sync-card small { display: block; font-size: .67rem; }
